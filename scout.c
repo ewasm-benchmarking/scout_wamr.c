@@ -248,7 +248,7 @@ int account_exec(struct Account* account, unsigned char* input_blockData, int in
   bh_log_set_verbose_level(2);
 
   // get bytecode
-  int8* bytecode = NULL;
+  uint8* bytecode = NULL;
   uint32 bytecodeSize = 0;
   if (!(bytecode = (uint8*) bh_read_file_to_buffer(account->wasm_filename, &bytecodeSize))){
     wasm_runtime_destroy();
@@ -323,10 +323,11 @@ int account_exec(struct Account* account, unsigned char* input_blockData, int in
   wasm_runtime_destroy();
   bh_memory_destroy();
 
+  return 0;
 }
 
 
-int account_delete(struct Account* account){
+void account_delete(struct Account* account){
   free(account->address);
   free(account->stateRoot);
   free(account);
@@ -339,9 +340,9 @@ int account_delete(struct Account* account){
 // hex string to int array conversion
 // input is string of hex characters, without 0x prefix
 // also converts to little endian (ie least significant nibble first)
-void hexstr_to_bytearray(uint8_t* out, char* in){
+void hexstr_to_bytearray(uint8_t* out, unsigned char* in){
   if(verbose>2) printf("hexstr_to_bytearray(%s)\n",in);
-  size_t len = strlen(in);
+  size_t len = strlen((char*)in);
   if (len==0) return;
   uint8_t byte = 0;
   uint8_t nibble = 0;
@@ -411,14 +412,14 @@ int main(int argc, char** argv){
   if(node->type != YAML_MAPPING_NODE)
     goto error;
   node = yaml_document_get_node(&document, 2);
-  if(node->type != YAML_SCALAR_NODE || strcmp(node->data.scalar.value, "beacon_state"))
+  if(node->type != YAML_SCALAR_NODE || strcmp((char*)node->data.scalar.value, "beacon_state"))
     goto error;
   // execution_scripts
   node = yaml_document_get_node(&document, 3);
   if(node->type != YAML_MAPPING_NODE)
     goto error;
   node = yaml_document_get_node(&document, 4);
-  if(node->type != YAML_SCALAR_NODE || strcmp(node->data.scalar.value, "execution_scripts"))
+  if(node->type != YAML_SCALAR_NODE || strcmp((char*)node->data.scalar.value, "execution_scripts"))
     goto error;
   // get start and end node idx of execution script names sequence
   node = yaml_document_get_node(&document, 5);
@@ -440,14 +441,14 @@ int main(int argc, char** argv){
   // shard_pre_state
   node_idx = end_node_idx_execution_scripts + 1;
   node = yaml_document_get_node(&document, node_idx++);
-  if(node->type != YAML_SCALAR_NODE || strcmp(node->data.scalar.value, "shard_pre_state"))
+  if(node->type != YAML_SCALAR_NODE || strcmp((char*)node->data.scalar.value, "shard_pre_state"))
     goto error;
   // exec_env_states
   node = yaml_document_get_node(&document, node_idx++);
   if(node->type != YAML_MAPPING_NODE)
     goto error;
   node = yaml_document_get_node(&document, node_idx++);
-  if(node->type != YAML_SCALAR_NODE || strcmp(node->data.scalar.value, "exec_env_states"))
+  if(node->type != YAML_SCALAR_NODE || strcmp((char*)node->data.scalar.value, "exec_env_states"))
     goto error;
   // get start and end node idx of execution prestates sequence
   node = yaml_document_get_node(&document, node_idx++);
@@ -468,7 +469,7 @@ int main(int argc, char** argv){
 
   // get shard_blocks key
   node = yaml_document_get_node(&document, node_idx++);
-  if(node->type != YAML_SCALAR_NODE || strcmp(node->data.scalar.value, "shard_blocks"))
+  if(node->type != YAML_SCALAR_NODE || strcmp((char*)node->data.scalar.value, "shard_blocks"))
     goto error;
   // get start and end of execution script names sequence
   node = yaml_document_get_node(&document, node_idx++);
@@ -483,7 +484,7 @@ int main(int argc, char** argv){
       goto error;
     // key env and its value
     node = yaml_document_get_node(&document, node_idx++);
-    if(node->type != YAML_SCALAR_NODE || strcmp(node->data.scalar.value, "env"))
+    if(node->type != YAML_SCALAR_NODE || strcmp((char*)node->data.scalar.value, "env"))
       goto error;
     node = yaml_document_get_node(&document, node_idx++);
     if(node->type != YAML_SCALAR_NODE)
@@ -491,7 +492,7 @@ int main(int argc, char** argv){
     // should also check that node->data.scalar.value is an integer less than the number of EEs
     // key "data" and its value
     node = yaml_document_get_node(&document, node_idx++);
-    if(node->type != YAML_SCALAR_NODE || strcmp(node->data.scalar.value, "data"))
+    if(node->type != YAML_SCALAR_NODE || strcmp((char*)node->data.scalar.value, "data"))
       goto error;
     node = yaml_document_get_node(&document, node_idx++);
     if(node->type != YAML_SCALAR_NODE)
@@ -506,14 +507,14 @@ int main(int argc, char** argv){
   // shard_post_state
   node_idx = end_node_idx_shard_blocks+1;
   node = yaml_document_get_node(&document, node_idx++);
-  if(node->type != YAML_SCALAR_NODE || strcmp(node->data.scalar.value, "shard_post_state"))
+  if(node->type != YAML_SCALAR_NODE || strcmp((char*)node->data.scalar.value, "shard_post_state"))
     goto error;
   // exec_env_states
   node = yaml_document_get_node(&document, node_idx++);
   if(node->type != YAML_MAPPING_NODE)
     goto error;
   node = yaml_document_get_node(&document, node_idx++);
-  if(node->type != YAML_SCALAR_NODE || strcmp(node->data.scalar.value, "exec_env_states"))
+  if(node->type != YAML_SCALAR_NODE || strcmp((char*)node->data.scalar.value, "exec_env_states"))
     goto error;
   // get start and end node idx of execution poststates sequence
   node = yaml_document_get_node(&document, node_idx++);
@@ -542,7 +543,7 @@ int main(int argc, char** argv){
     node = yaml_document_get_node(&document, i);
     if(verbose) printf("file %s\n",node->data.scalar.value);
     // instantiate wasm
-    char *wasm_filename = node->data.scalar.value;
+    char *wasm_filename = (char*)node->data.scalar.value;
     struct Account* acct = create_account(wasm_filename, j);
     world_state[j] = acct;
   }
@@ -561,14 +562,14 @@ int main(int argc, char** argv){
   for (int i=start_node_idx_shard_blocks; i<end_node_idx_shard_blocks; i+=5){
     node = yaml_document_get_node(&document, i+2);
     if(verbose) printf("shard_block env %s  ",node->data.scalar.value);
-    int env = atoi(node->data.scalar.value);
+    int env = atoi((char*)node->data.scalar.value);
     node = yaml_document_get_node(&document, i+4);
     if(verbose) printf("blockData %s\n",node->data.scalar.value);
     unsigned char* input_blockData_hex = node->data.scalar.value;
     struct Account* acct = world_state[env];
     size_t len_hexstr = node->data.scalar.length;
     int input_blockDataSize = len_hexstr/2;
-    char* input_blockData = (unsigned char*) malloc(input_blockDataSize);
+    unsigned char* input_blockData = (unsigned char*) malloc(input_blockDataSize);
     if (len_hexstr)
       hexstr_to_bytearray(input_blockData, input_blockData_hex);
     // call this env with blockdata
