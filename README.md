@@ -9,9 +9,10 @@ We use `libyaml` to parse Scout test yaml format and `wamr` to execute Wasm. If 
 ```
 cd scout.c
 git clone https://github.com/yaml/libyaml.git
-cd libyaml && git checkout 94ecadc50ebd19299c96ee96417d252a417c7816 . && cd ..
-https://github.com/bytecodealliance/wasm-micro-runtime.git
-cd wabt && git checkout 1e573664095f8931e3991c5757fbc8d870f22fa4 . && cd ..
+cd libyaml && git checkout 72e2f75277ff88ad1fb8a81cf422df06bf371578 . && cd ..
+git clone https://github.com/bytecodealliance/wasm-micro-runtime.git
+cd wasm-micro-runtime && git checkout d381b0fdec04f5ca8b891c070a00fd99a785c322 . && cd ..
+git clone https://github.com/poemm/bigint_experiments.git
 ```
 
 
@@ -21,6 +22,7 @@ Two options.
 
 Option 1) CMake for everything.
 
+NOTE: I DIDN'T UPDATE CMakeLists.txt, so this won't work.
 ```
 # from scout.c repo directory
 # make sure that dependencies are in this directory, otherwise adjust paths in CMakeLists.txt
@@ -40,7 +42,7 @@ Option 2) gcc or clang for scout.c.
 cd libyaml/
 mkdir build && cd build
 cmake -DCMAKE_BUILD_TYPE=Release ..
-make	 # will output library libOFF.a
+make	 # will output library libyaml.a
 cd ../..
 
 # compile wamr
@@ -51,8 +53,7 @@ make	# will output library libvmlib.a
 cd ../../../../..
 
 # compile scout.c, adjust paths to includes and libraries as needed
-gcc scout.c -Iwasm-micro-runtime/core/shared/platform/linux/ -Iwasm-micro-runtime/core/shared/platform/include/ -Iwasm-micro-runtime/core/shared/include/ -Iwasm-micro-runtime/core/iwasm/include/ -Ilibyaml/include/ -Llibyaml/build/ -Lwasm-micro-runtime/product-mini/platforms/linux/build/ -lOFF -lvmlib -lpthread -lm -O4 -march=native -o scout.exec
-# this outputs scout.exec
+gcc scout.c -Ibigint_experiments/ -Iwasm-micro-runtime/core/shared/platform/linux/ -Iwasm-micro-runtime/core/iwasm/include/ -Iwasm-micro-runtime/core/shared/utils/ -Iwasm-micro-runtime/core/shared/utils/uncommon/ -Iwasm-micro-runtime/core/iwasm/common/ -Ilibyaml/include/ -Llibyaml/build/ -Lwasm-micro-runtime/product-mini/platforms/linux/build/ wasm-micro-runtime/product-mini/platforms/linux/build/CMakeFiles/iwasm.dir/home/user/mnt/repos/ethereum/scout.c_overhaul/wasm-micro-runtime/core/shared/utils/uncommon/bh_read_file.c.o -lyaml -lvmlib -lpthread -lm -O4 -march=native -o scout.exec
 ```
 
 
@@ -62,4 +63,4 @@ gcc scout.c -Iwasm-micro-runtime/core/shared/platform/linux/ -Iwasm-micro-runtim
 # from scout.c repo directory
 ./scout.exec helloworld.yaml
 # warning: yaml files specify path to wasm files relative to scout.exec, everything is in the same directory for now
-```
+g```

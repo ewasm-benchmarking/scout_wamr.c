@@ -10,140 +10,51 @@
 #include "bh_platform.h"
 #include "bh_assert.h"
 #include "bh_log.h"
-#include "bh_memory.h"
+//#include "bh_memory.h"
+#include "bh_read_file.h"
 #include "wasm_export.h"
+#include "wasm_runtime_common.h"
+
+#include <time.h>
+
+// bigint functions
+#define BIGINT_BITS 384
+#define LIMB_BITS 64
+#define LIMB_BITS_OVERFLOW 128
+#include "bigint.h"
 
 
 #define verbose 0
 
 
 
-///////////////////////////
-//#include "wasm_runtime.h" causes errors since things are duplicated with wasm_export.h, so just hard-code it here (this is a hack)
+///////////////////////
+// some globals for now
 
-//this struct was copy/pasted so the original license applies.
-/* 
- * Copyright (C) 2019 Intel Corporation.  All rights reserved.
- * SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
- */
-typedef struct WASMMemoryInstance {
-    /* Current page count */
-    uint32 cur_page_count;
-    /* Maximum page count */
-    uint32 max_page_count;
+uint8_t* stateRoot = NULL; // this is the state root for the module, global for now, should put it into WASMModuleInstance or the EE instance or something
+uint8_t* blockData = NULL; // this is the blockData for this call, global for now, should put it into WASMModuleInstance or the EE instance or something
+uint32_t blockDataSize = 0; // this is needed with blockData
 
-    /* Heap data base address */
-    uint8 *heap_data;
-    /* Heap data end address */
-    uint8 *heap_data_end;
-    /* The heap created */
-    void *heap_handle;
-    /* Heap base offset of wasm app */
-    int32 heap_base_offset;
-
-    /* Memory data */
-    uint8 *memory_data;
-    /* Global data of global instances */
-    uint8 *global_data;
-    uint32 global_data_size;
-
-    /* End address of memory */
-    uint8 *end_addr;
-
-    /* Base address, the layout is:
-       thunk_argv data + thunk arg offsets +
-       memory data + global data
-       memory data init size is: NumBytesPerPage * cur_page_count
-       global data size is calculated in module instantiating
-       Note: when memory is re-allocated, the thunk argv data, thunk
-             argv offsets and memory data must be copied to new memory also.
-     */
-    uint8 base_addr[1];
-} WASMMemoryInstance;
-
-// some dummys
-typedef struct WASMTableInstance{int a;} WASMTableInstance;
-typedef struct WASMGlobalInstance{int a;} WASMGlobalInstance;
-typedef struct WASMFunctionInstance{int a;} WASMFunctionInstance;
-typedef struct WASMExportFuncInstance{int a;} WASMExportFuncInstance;
-typedef struct WASMModule{int a;} WASMModule;
-typedef struct WASMExecEnv{int a;} WASMExecEnv;
-
-//this struct was copy/pasted so the original license applies.
-/* 
- * Copyright (C) 2019 Intel Corporation.  All rights reserved.
- * SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
- */
-typedef struct WASMModuleInstance {
-    /* Module instance type, for module instance loaded from
-       WASM bytecode binary, this field is Wasm_Module_Bytecode;
-       for module instance loaded from AOT file, this field is
-       Wasm_Module_AoT, and this structure should be treated as
-       AOTModuleInstance structure. */
-    uint32 module_type;
-
-    uint32 memory_count;
-    uint32 table_count;
-    uint32 global_count;
-    uint32 function_count;
-    uint32 export_func_count;
-
-    WASMMemoryInstance **memories;
-    WASMTableInstance **tables;
-    WASMGlobalInstance *globals;
-    WASMFunctionInstance *functions;
-    WASMExportFuncInstance *export_functions;
-
-    WASMMemoryInstance *default_memory;
-    WASMTableInstance *default_table;
-
-    WASMFunctionInstance *start_function;
-
-    WASMModule *module;
-
-#if WASM_ENABLE_LIBC_WASI != 0
-    WASIContext *wasi_ctx;
-#endif
-
-    uint32 DYNAMICTOP_PTR_offset;
-    uint32 temp_ret;
-    uint32 llvm_stack;
-
-    /* Default WASM stack size of threads of this Module instance. */
-    uint32 default_wasm_stack_size;
-
-    /* The exception buffer of wasm interpreter for current thread. */
-    char cur_exception[128];
-
-    /* The custom data that can be set/get by
-     * wasm_set_custom_data/wasm_get_custom_data */
-    void *custom_data;
-
-    /* Main exec env */
-    WASMExecEnv *main_exec_env;
-} WASMModuleInstance;
-
-
-
+// crypto globals
+// bls12-381 values
+//mod = 0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab
+//modinv = 0x14fec701e8fb0ce9ed5e64273c4f538b1797ab1458a88de9343ea97914956dc87fe11274d898fafbf4d38259380b48
+//rsquared = 0x11988fe592cae3aa9a793e85b519952d67eb88a9939d83c08de5476c4c95b6d50a76e6a609d104f1f4df1f341c341746
+uint64_t mod[] = {0xb9feffffffffaaab, 0x1eabfffeb153ffff, 0x6730d2a0f6b0f624, 0x64774b84f38512bf, 0x4b1ba7b6434bacd7, 0x1a0111ea397fe69a};
+uint64_t modinv[] = {0xf4d38259380b4820, 0x7fe11274d898fafb, 0x343ea97914956dc8, 0x1797ab1458a88de9, 0xed5e64273c4f538b, 0x14fec701e8fb0ce9};
+uint64_t rsquared[] = {0xf4df1f341c341746, 0xa76e6a609d104f1, 0x8de5476c4c95b6d5, 0x67eb88a9939d83c0, 0x9a793e85b519952d, 0x11988fe592cae3aa};
 
 
 
 /////////////////
 // Host functions
 
-// some globals for now
-uint8_t* stateRoot = NULL; // this is the state root for the module, global for now, should put it into WASMModuleInstance or the EE instance or something
-uint8_t* blockData = NULL; // this is the blockData for this call, global for now, should put it into WASMModuleInstance or the EE instance or something
-uint32_t blockDataSize = 0; // this is needed with blockData
-
-void eth2_loadPreStateRoot(wasm_exec_env_t exec_env, uint32_t offset){
-  if(verbose) printf("eth2_loadPreStateRoot(%u)\n",offset);
-  wasm_module_inst_t module_inst = wasm_runtime_get_module_inst(exec_env);
-  WASMMemoryInstance *mem = ((WASMModuleInstance*)module_inst)->default_memory;
+void eth2_loadPreStateRoot(wasm_exec_env_t exec_env, uint8_t* mem){
+  if(verbose) printf("eth2_loadPreStateRoot(%p)\n",mem);
   //if (mem->memory_data+offset+32 < end_addr)
   //  wasm_runtime_set_exception(module_inst, buf);
   for (int i=0; i<32; i++){
-    mem->memory_data[offset+i] = stateRoot[i];
+    mem[i] = stateRoot[i];
   }
 }
 
@@ -152,46 +63,105 @@ uint32_t eth2_blockDataSize(wasm_exec_env_t exec_env){
   return blockDataSize;
 }
 
-void eth2_blockDataCopy(wasm_exec_env_t exec_env, uint32_t outputOffset, uint32_t offset, uint32_t length){
-  if(verbose) printf("eth2_blockDataCopy(%u, %u, %u)\n", outputOffset, offset, length);
-  wasm_module_inst_t module_inst = wasm_runtime_get_module_inst(exec_env);
-  WASMMemoryInstance *mem = ((WASMModuleInstance*)module_inst)->default_memory;
+void eth2_blockDataCopy(wasm_exec_env_t exec_env, uint8_t *mem, uint32_t offset, uint32_t length){
+  if(verbose) printf("eth2_blockDataCopy(%p, %u, %u)\n", mem, offset, length);
   //if (mem->memory_data+offset+length < end_addr) error;
   //if (blockDataSize < offset+length ) error;
   for (int i=0; i<length; i++){
-    mem->memory_data[outputOffset+i] = blockData[offset+i];
+    mem[i] = blockData[offset+i];
   }
 }
 
-void eth2_savePostStateRoot(wasm_exec_env_t exec_env, uint32_t offset){
-  if(verbose) printf("eth2_savePostStateRoot(%u)\n", offset);
-  wasm_module_inst_t module_inst = wasm_runtime_get_module_inst(exec_env);
-  WASMMemoryInstance *mem = ((WASMModuleInstance*)module_inst)->default_memory;
+void eth2_savePostStateRoot(wasm_exec_env_t exec_env, uint8_t* mem){
+  if(verbose) printf("eth2_savePostStateRoot(%p)\n", mem);
   //if (mem->memory_data+offset+32 < mem->end_addr) error;
   for (int i=0; i<32; i++){
-    stateRoot[i] = mem->memory_data[offset+i];
+    stateRoot[i] = mem[i];
   }
 }
 
-void eth2_pushNewDeposit(wasm_exec_env_t exec_env, uint32_t offset, uint32_t length){
-  if(verbose) printf("eth2_pushNewDeposit(%u, %u)\n", offset, length);
+void eth2_pushNewDeposit(wasm_exec_env_t exec_env, uint8_t* mem, uint32_t length){
+  if(verbose) printf("eth2_pushNewDeposit(%p, %u)\n", mem, length);
 }
 
-void eth2_debugPrintMem(wasm_exec_env_t exec_env, uint32_t offset, uint32_t length){
-  if(verbose) printf("eth2_debugPrintMem(%u, %u)\n", offset, length);
+void debug_printMemHex(wasm_exec_env_t exec_env, uint8_t* mem, uint32_t length){
+  if(verbose) printf("eth2_debugPrintMem(%p, %u)\n", mem, length);
+}
+
+void bignum_f1m_toMontgomery(wasm_exec_env_t exec_env, uint8_t* out, uint8_t* x){
+  if(verbose) printf("bignum_f1m_toMontgomery()\n");
+  FUNCNAME(montmul)(out,x,rsquared,mod,modinv);
+}
+
+void bignum_f1m_fromMontgomery(wasm_exec_env_t exec_env, uint8_t* out, uint8_t* x){
+  if(verbose) printf("bignum_f1m_fromMontgomery()\n");
+  FUNCNAME(montreduce)(out,x,mod,modinv);
+}
+
+int f1m_mul_counter=0;
+void bignum_f1m_mul(wasm_exec_env_t exec_env, uint8_t* out, uint8_t* x, uint8_t* y){
+  if(verbose) printf("bignum_f1m_mul()\n");
+  f1m_mul_counter+=1;
+  FUNCNAME(montmul)(out,x,y,mod,modinv);
+}
+
+void bignum_f1m_add(wasm_exec_env_t exec_env, uint8_t* out, uint8_t* x, uint8_t* y){
+  if(verbose) printf("bignum_f1m_add()\n");
+  FUNCNAME(addmod)(out,x,y,mod);
+}
+
+void bignum_f1m_sub(wasm_exec_env_t exec_env, uint8_t* out, uint8_t* x, uint8_t* y){
+  if(verbose) printf("bignum_f1m_sub()\n");
+  FUNCNAME(subtractmod)(out,x,y,mod);
+}
+
+void bignum_f1m_square(wasm_exec_env_t exec_env, uint8_t* out, uint8_t* x){
+  if(verbose) printf("bignum_f1m_square()\n");
+  FUNCNAME(montsquare)(out,x,mod,modinv);
+}
+
+void bignum_int_mul(wasm_exec_env_t exec_env, uint8_t* out, uint8_t* x, uint8_t* y){
+  if(verbose) printf("bignum_int_mul()\n");
+  FUNCNAME(mul)(out,x,y);
+}
+
+uint32_t bignum_int_add(wasm_exec_env_t exec_env, uint8_t* out, uint8_t* x, uint8_t* y){
+  if(verbose) printf("bignum_int_add()\n");
+  FUNCNAME(add)(out,x,y);
+}
+
+uint32_t bignum_int_sub(wasm_exec_env_t exec_env, uint8_t* out, uint8_t* x, uint8_t* y){
+  if(verbose) printf("bignum_int_sub()\n");
+  FUNCNAME(subtract)(out,x,y);
+}
+
+void bignum_int_div(wasm_exec_env_t exec_env, uint8_t* remainder, uint8_t* quotient, uint8_t* x, uint8_t* y){
+  if(verbose) printf("bignum_int_div()\n");
+  FUNCNAME(div)(quotient,remainder,x,y);
 }
 
 // wamr registers host functions like this, so that they are available for import
-#include "lib_export.h"
-static NativeSymbol extended_native_symbol_defs[] = { 
-  EXPORT_WASM_API(eth2_loadPreStateRoot),
-  EXPORT_WASM_API(eth2_blockDataSize),
-  EXPORT_WASM_API(eth2_blockDataCopy),
-  EXPORT_WASM_API(eth2_savePostStateRoot),
-  EXPORT_WASM_API(eth2_pushNewDeposit),
-  EXPORT_WASM_API(eth2_debugPrintMem)
+// see https://github.com/bytecodealliance/wasm-micro-runtime/blob/master/doc/export_native_api.md
+// also see code in the repo, since this doc may be outdated
+static NativeSymbol native_symbols[] = { 
+  EXPORT_WASM_API_WITH_SIG(eth2_loadPreStateRoot,"(*)"),
+  EXPORT_WASM_API_WITH_SIG(eth2_blockDataSize,"()i"),
+  EXPORT_WASM_API_WITH_SIG(eth2_blockDataCopy,"(*ii)"),
+  EXPORT_WASM_API_WITH_SIG(eth2_savePostStateRoot,"(*)"),
+  EXPORT_WASM_API_WITH_SIG(eth2_pushNewDeposit,"(*~)"),
+  EXPORT_WASM_API_WITH_SIG(debug_printMemHex,"(*~)"),
+  EXPORT_WASM_API_WITH_SIG(bignum_f1m_toMontgomery,"(**)"),
+  EXPORT_WASM_API_WITH_SIG(bignum_f1m_fromMontgomery,"(**)"),
+  EXPORT_WASM_API_WITH_SIG(bignum_f1m_mul,"(***)"),
+  EXPORT_WASM_API_WITH_SIG(bignum_f1m_add,"(***)"),
+  EXPORT_WASM_API_WITH_SIG(bignum_f1m_sub,"(***)"),
+  EXPORT_WASM_API_WITH_SIG(bignum_f1m_square,"(**)"),
+  EXPORT_WASM_API_WITH_SIG(bignum_int_mul,"(***)"),
+  EXPORT_WASM_API_WITH_SIG(bignum_int_add,"(***)i"),
+  EXPORT_WASM_API_WITH_SIG(bignum_int_sub,"(***)i"),
+  EXPORT_WASM_API_WITH_SIG(bignum_int_div,"(****)")
+	  
 };
-#include "ext_lib_export.h"
 
 
 
@@ -233,95 +203,99 @@ int account_exec(struct Account* account, unsigned char* input_blockData, int in
   blockDataSize = input_blockDataSize;
   stateRoot = account->stateRoot;
 
-  // allocate memory
-  if (bh_memory_init_with_allocator(malloc, free)) {
-    bh_printf("Init memory with memory allocator failed.\n");
-    return -1;
-  }
+
+  // wamr stuff
+  //char *wasm_file = NULL;
+  const char *func_name = NULL;
+  uint8 *wasm_file_buf = NULL;
+  uint32 wasm_file_size;
+  uint32 stack_size = 16 * 1024, heap_size = 16 * 1024;
+  wasm_module_t wasm_module = NULL;
+  wasm_module_inst_t wasm_module_inst = NULL;
+  RuntimeInitArgs init_args;
+  char error_buf[128] = { 0 };
+
+  memset(&init_args, 0, sizeof(RuntimeInitArgs));
+
+  init_args.mem_alloc_type = Alloc_With_Allocator;
+  init_args.mem_alloc_option.allocator.malloc_func = malloc;
+  init_args.mem_alloc_option.allocator.realloc_func = realloc;
+  init_args.mem_alloc_option.allocator.free_func = free;
 
   // init runtime environment
-  if (!wasm_runtime_init()){
-    bh_memory_destroy();
-    return -1;
+  if (!wasm_runtime_full_init(&init_args)) {
+     printf("Init runtime environment failed.\n");
+      return -1;
   }
 
-  bh_log_set_verbose_level(2);
-
-  // get bytecode
-  uint8* bytecode = NULL;
-  uint32 bytecodeSize = 0;
-  if (!(bytecode = (uint8*) bh_read_file_to_buffer(account->wasm_filename, &bytecodeSize))){
-    wasm_runtime_destroy();
-    bh_memory_destroy();
-    return -1;
+  // register host funcs
+  int num_native_symbols = sizeof(native_symbols) / sizeof(NativeSymbol);
+  if (!wasm_runtime_register_natives("env",
+                                     native_symbols, 
+                                     num_native_symbols)) {
+    goto fail1;
   }
 
-  // parse bytecode
-  wasm_module_t wasm_module = NULL;
-  char error_buffer[128] = {0};
-  if (!(wasm_module = wasm_runtime_load(bytecode, bytecodeSize, error_buffer, sizeof(error_buffer)))) {
-    bh_printf("%s\n", error_buffer);
-    bh_free(bytecode);
-    wasm_runtime_destroy();
-    bh_memory_destroy();
-    return -1;
+  bh_log_set_verbose_level(0);
+
+  // read bytecode
+  if (!(wasm_file_buf = (uint8*) bh_read_file_to_buffer(account->wasm_filename,
+                                                        &wasm_file_size)))
+      goto fail1;
+
+  // load WASM module
+  if (!(wasm_module = wasm_runtime_load(wasm_file_buf, wasm_file_size,
+                                        error_buf, sizeof(error_buf)))) {
+      printf("%s\n", error_buf);
+      goto fail2;
   }
 
-  // instantiate module
-  //int stack_size = 64 * 1024;
-  int stack_size = 1024 * 1024;
-  //int heap_size = 64 * 1024;
-  int heap_size = 1024 * 1024;
-  wasm_module_inst_t wasm_module_inst;
-  if (!(wasm_module_inst = wasm_runtime_instantiate(wasm_module, stack_size, 
-			             heap_size, error_buffer, sizeof(error_buffer)))){
-    bh_printf("%s\n", error_buffer);
-    wasm_runtime_unload(wasm_module);
-    bh_free(bytecode);
-    wasm_runtime_destroy();
-    bh_memory_destroy();
-    return -1;
+  /* instantiate the module */
+  if (!(wasm_module_inst = wasm_runtime_instantiate(wasm_module,
+                                                    stack_size,
+                                                    heap_size,
+                                                    error_buf,
+                                                    sizeof(error_buf)))) {
+      printf("%s\n", error_buf);
+      goto fail3;
   }
 
-  // get main func
-  wasm_function_inst_t main_func;
-  if (!(main_func = wasm_runtime_lookup_function(wasm_module_inst, "main", "()"))){
-    wasm_runtime_unload(wasm_module);
-    bh_free(bytecode);
-    wasm_runtime_destroy();
-    bh_memory_destroy();
-    return -1;
-  }
 
-  // get exec env
-  wasm_exec_env_t exec_env;
-  if (!(exec_env = wasm_runtime_create_exec_env(wasm_module_inst, stack_size))){
-    wasm_runtime_unload(wasm_module);
-    bh_free(bytecode);
-    wasm_runtime_destroy();
-    bh_memory_destroy();
-    return -1;
-  }
 
-  // call main
-  if (!(wasm_runtime_call_wasm(exec_env, main_func, 0, NULL) ) ) {
-    const char *exception;
-    if ((exception = wasm_runtime_get_exception(wasm_module_inst)))
-      bh_printf("%s\n", exception);
-    wasm_runtime_unload(wasm_module);
-    bh_free(bytecode);
-    wasm_runtime_destroy();
-    bh_memory_destroy();
-    return -1;
-  }
+  // call func
+  struct timespec requestStart, requestEnd;
+  clock_gettime(CLOCK_REALTIME, &requestStart);
 
-  // clean up
-  bh_free(bytecode);
-  wasm_runtime_destroy_exec_env(exec_env);
+  wasm_application_execute_func(wasm_module_inst, "main", 0, NULL);
+
+  clock_gettime(CLOCK_REALTIME, &requestEnd);
+  double accum = ( requestEnd.tv_sec - requestStart.tv_sec )
+                 + ( requestEnd.tv_nsec - requestStart.tv_nsec )
+                 / 1E9;
+  printf( "execution time: %lf\n", accum );
+
+
+
+  /* destroy the module instance */
   wasm_runtime_deinstantiate(wasm_module_inst);
+
+
+
+fail3:
+  /* unload the module */
   wasm_runtime_unload(wasm_module);
+
+fail2:
+  /* free the file buffer */
+  wasm_runtime_free(wasm_file_buf);
+
+fail1:
+  /* destroy runtime environment */
   wasm_runtime_destroy();
-  bh_memory_destroy();
+
+
+
+
 
   return 0;
 }
@@ -612,6 +586,11 @@ int main(int argc, char** argv){
     free(acct);
   }
   free(world_state);
+
+
+  printf("f1m_mul_counter %u\n",f1m_mul_counter);
+
+
 
   return 0;
 
