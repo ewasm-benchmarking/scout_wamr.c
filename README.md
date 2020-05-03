@@ -53,7 +53,7 @@ make	# will output library libvmlib.a
 cd ../../../../..
 
 # compile scout.c, adjust paths to includes and libraries as needed
-gcc scout.c -Ibigint_experiments/ -Iwasm-micro-runtime/core/shared/platform/linux/ -Iwasm-micro-runtime/core/iwasm/include/ -Iwasm-micro-runtime/core/shared/utils/ -Iwasm-micro-runtime/core/shared/utils/uncommon/ -Iwasm-micro-runtime/core/iwasm/common/ -Ilibyaml/include/ -Llibyaml/build/ -Lwasm-micro-runtime/product-mini/platforms/linux/build/ wasm-micro-runtime/product-mini/platforms/linux/build/CMakeFiles/iwasm.dir/home/user/mnt/repos/ethereum/scout.c_overhaul/wasm-micro-runtime/core/shared/utils/uncommon/bh_read_file.c.o -lyaml -lvmlib -lpthread -lm -O4 -march=native -o scout.exec
+gcc scout.c -Ibigint_experiments/ -Iwasm-micro-runtime/core/shared/platform/linux/ -Iwasm-micro-runtime/core/iwasm/include/ -Iwasm-micro-runtime/core/shared/utils/ -Iwasm-micro-runtime/core/shared/utils/uncommon/ -Iwasm-micro-runtime/core/iwasm/common/ -Ilibyaml/include/ -Llibyaml/build/ -Lwasm-micro-runtime/product-mini/platforms/linux/build/ wasm-micro-runtime/product-mini/platforms/linux/build/CMakeFiles/iwasm.dir/home/user/mnt/repos/ethereum/scout.c/wasm-micro-runtime/core/shared/utils/uncommon/bh_read_file.c.o -lyaml -lvmlib -lpthread -lm -O4 -march=native -o scout.exec
 ```
 
 

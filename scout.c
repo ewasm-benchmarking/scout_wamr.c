@@ -107,14 +107,14 @@ void bignum_f1m_mul(wasm_exec_env_t exec_env, uint8_t* a1, uint8_t* a2, uint8_t*
   FUNCNAME(montmul)((UINT*)a3,(UINT*)a2,(UINT*)a1,(UINT*)mod,modinv[0]);
 }
 
-void bignum_f1m_add(wasm_exec_env_t exec_env, uint8_t* out, uint8_t* x, uint8_t* y){
+void bignum_f1m_add(wasm_exec_env_t exec_env, uint8_t* a1, uint8_t* a2, uint8_t* a3){
   if(verbose) printf("bignum_f1m_add()\n");
-  //FUNCNAME(addmod)((UINT*)out,(UINT*)x,(UINT*)y,(UINT*)mod);
+  FUNCNAME(addmod)((UINT*)a3,(UINT*)a2,(UINT*)a1,(UINT*)mod);
 }
 
-void bignum_f1m_sub(wasm_exec_env_t exec_env, uint8_t* out, uint8_t* x, uint8_t* y){
+void bignum_f1m_sub(wasm_exec_env_t exec_env, uint8_t* a1, uint8_t* a2, uint8_t* a3){
   if(verbose) printf("bignum_f1m_sub()\n");
-  //FUNCNAME(subtractmod)((UINT*)out,(UINT*)x,(UINT*)y,(UINT*)mod);
+  FUNCNAME(subtractmod)((UINT*)a3,(UINT*)a2,(UINT*)a1,(UINT*)mod);
 }
 
 void bignum_f1m_square(wasm_exec_env_t exec_env, uint8_t* out, uint8_t* x){
