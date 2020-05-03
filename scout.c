@@ -117,9 +117,9 @@ void bignum_f1m_sub(wasm_exec_env_t exec_env, uint8_t* a1, uint8_t* a2, uint8_t*
   FUNCNAME(subtractmod)((UINT*)a3,(UINT*)a2,(UINT*)a1,(UINT*)mod);
 }
 
-void bignum_f1m_square(wasm_exec_env_t exec_env, uint8_t* out, uint8_t* x){
+void bignum_f1m_square(wasm_exec_env_t exec_env, uint8_t* a1, uint8_t* a2){
   if(verbose) printf("bignum_f1m_square()\n");
-  //FUNCNAME(montsquare)((UINT*)out,(UINT*)x,(UINT*)mod,modinv[0]);
+  FUNCNAME(montmul)((UINT*)a2,(UINT*)a1,(UINT*)a1,(UINT*)mod,modinv[0]);
 }
 
 void bignum_int_mul(wasm_exec_env_t exec_env, uint8_t* out, uint8_t* x, uint8_t* y){

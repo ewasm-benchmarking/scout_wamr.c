@@ -2,7 +2,7 @@ beacon_state:
   execution_scripts:
     #- main_with_websnark_bignum_hostfuncs.wasm
     #- main_with_websnark_bignum_hostfuncs_f1m_mul.wasm
-    - main_with_websnark_bignum_hostfuncs_f1m_muladdsub.wasm
+    - main_with_websnark_bignum_hostfuncs_f1m_muladdsubsquare.wasm
     #- main_with_websnark.wasm
     #- main_with_websnark_dummy_f1m_mul.wasm
     #- main_with_websnark_dummy_f1m.wasm

@@ -23,6 +23,7 @@
   (import "env" "bignum_f1m_mul" (func $main/bignum_f1m_mul (type 6)))
   (import "env" "bignum_f1m_add" (func $main/bignum_f1m_add (type 6)))
   (import "env" "bignum_f1m_sub" (func $main/bignum_f1m_sub (type 6)))
+  (import "env" "bignum_f1m_square" (func $main/bignum_f1m_square (type 0)))
   (func $~lib/rt/stub/maybeGrowMemory (type 2) (param $0 i32)
     (local $1 i32) (local $2 i32)
     local.get $0
@@ -17537,7 +17538,7 @@
         local.set $l5
         local.get $p3
         local.get $p3
-        call $f1m_square
+        call $main/bignum_f1m_square
         local.get $l5
         i32.const 128
         i32.ge_u
@@ -17553,7 +17554,7 @@
         end
         local.get $p3
         local.get $p3
-        call $f1m_square
+        call $main/bignum_f1m_square
         local.get $l5
         i32.const 64
         i32.ge_u
@@ -17569,7 +17570,7 @@
         end
         local.get $p3
         local.get $p3
-        call $f1m_square
+        call $main/bignum_f1m_square
         local.get $l5
         i32.const 32
         i32.ge_u
@@ -17585,7 +17586,7 @@
         end
         local.get $p3
         local.get $p3
-        call $f1m_square
+        call $main/bignum_f1m_square
         local.get $l5
         i32.const 16
         i32.ge_u
@@ -17601,7 +17602,7 @@
         end
         local.get $p3
         local.get $p3
-        call $f1m_square
+        call $main/bignum_f1m_square
         local.get $l5
         i32.const 8
         i32.ge_u
@@ -17617,7 +17618,7 @@
         end
         local.get $p3
         local.get $p3
-        call $f1m_square
+        call $main/bignum_f1m_square
         local.get $l5
         i32.const 4
         i32.ge_u
@@ -17633,7 +17634,7 @@
         end
         local.get $p3
         local.get $p3
-        call $f1m_square
+        call $main/bignum_f1m_square
         local.get $l5
         i32.const 2
         i32.ge_u
@@ -17649,7 +17650,7 @@
         end
         local.get $p3
         local.get $p3
-        call $f1m_square
+        call $main/bignum_f1m_square
         local.get $l5
         i32.const 1
         i32.ge_u
@@ -17701,7 +17702,7 @@
         br_if 1 (;@1;)
         i32.const 2840
         i32.const 2936
-        call $f1m_square
+        call $main/bignum_f1m_square
         i32.const 1
         local.set $l3
         block  ;; label = @3
@@ -17712,7 +17713,7 @@
             br_if 1 (;@3;)
             i32.const 2936
             i32.const 2936
-            call $f1m_square
+            call $main/bignum_f1m_square
             local.get $l3
             i32.const 1
             i32.add
@@ -17736,7 +17737,7 @@
             br_if 1 (;@3;)
             i32.const 2984
             i32.const 2984
-            call $f1m_square
+            call $main/bignum_f1m_square
             local.get $l4
             i32.const 1
             i32.sub
@@ -17748,7 +17749,7 @@
         local.set $l2
         i32.const 2984
         i32.const 2792
-        call $f1m_square
+        call $main/bignum_f1m_square
         i32.const 2840
         i32.const 2792
         i32.const 2840
@@ -23554,10 +23555,10 @@
     end
     local.get $l2
     i32.const 4392
-    call $f1m_square
+    call $main/bignum_f1m_square
     local.get $l3
     i32.const 4440
-    call $f1m_square
+    call $main/bignum_f1m_square
     local.get $p0
     i32.const 4440
     i32.const 4488
@@ -23611,22 +23612,22 @@
     end
     local.get $p0
     i32.const 4776
-    call $f1m_square
+    call $main/bignum_f1m_square
     local.get $p0
     i32.const 48
     i32.add
     i32.const 4824
-    call $f1m_square
+    call $main/bignum_f1m_square
     i32.const 4824
     i32.const 4872
-    call $f1m_square
+    call $main/bignum_f1m_square
     local.get $p0
     i32.const 4824
     i32.const 4920
     call $main/bignum_f1m_add
     i32.const 4920
     i32.const 4920
-    call $f1m_square
+    call $main/bignum_f1m_square
     i32.const 4920
     i32.const 4776
     i32.const 4920
@@ -23649,7 +23650,7 @@
     call $main/bignum_f1m_add
     i32.const 4968
     i32.const 5016
-    call $f1m_square
+    call $main/bignum_f1m_square
     local.get $p0
     i32.const 48
     i32.add
@@ -23734,10 +23735,10 @@
     end
     local.get $l3
     i32.const 5160
-    call $f1m_square
+    call $main/bignum_f1m_square
     local.get $l4
     i32.const 5208
-    call $f1m_square
+    call $main/bignum_f1m_square
     local.get $p0
     i32.const 5208
     i32.const 5256
@@ -23794,7 +23795,7 @@
     call $main/bignum_f1m_add
     i32.const 5640
     i32.const 5640
-    call $f1m_square
+    call $main/bignum_f1m_square
     i32.const 5544
     i32.const 5640
     i32.const 5688
@@ -23809,7 +23810,7 @@
     call $main/bignum_f1m_mul
     i32.const 5736
     i32.const 5784
-    call $f1m_square
+    call $main/bignum_f1m_square
     i32.const 5832
     i32.const 5832
     i32.const 5880
@@ -23864,7 +23865,7 @@
     local.get $p2
     i32.const 96
     i32.add
-    call $f1m_square
+    call $main/bignum_f1m_square
     local.get $p2
     i32.const 96
     i32.add
@@ -23965,7 +23966,7 @@
       call $f1m_inverse
       i32.const 6120
       i32.const 6168
-      call $f1m_square
+      call $main/bignum_f1m_square
       i32.const 6120
       i32.const 6168
       i32.const 6216
@@ -25413,12 +25414,12 @@
   (func $f2m_inverse (type 0) (param $p0 i32) (param $p1 i32)
     local.get $p0
     i32.const 84424
-    call $f1m_square
+    call $main/bignum_f1m_square
     local.get $p0
     i32.const 48
     i32.add
     i32.const 84472
-    call $f1m_square
+    call $main/bignum_f1m_square
     i32.const 84472
     i32.const 84520
     call $f1m_neg
@@ -30473,7 +30474,7 @@
   (export "bls12381_pairingEq4" (func $bls12381_pairingEq4))
   (export "bls12381_pairingEq5" (func $bls12381_pairingEq5))
   (export "bls12381_pairing" (func $bls12381_pairing))
-  (start 23)
+  (start 24)
   (data (;0;) (i32.const 512000) "\08\00\00\00\01\00\00\00\00\00\00\00\08\00\00\00%")
   (data (;1;) (i32.const 512024) "\08\00\00\00\01\00\00\00\00\00\00\00\08\00\00\00\1b")
   (data (;2;) (i32.const 512048) "\08\00\00\00\01\00\00\00\00\00\00\00\08\00\00\00\e7\03")
