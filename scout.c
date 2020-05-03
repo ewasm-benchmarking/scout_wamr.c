@@ -17,11 +17,6 @@
 
 #include <time.h>
 
-// bigint functions
-#define BIGINT_BITS 384
-#define LIMB_BITS 64
-#define LIMB_BITS_OVERFLOW 128
-#include "bigint.h"
 
 
 #define verbose 0
@@ -34,15 +29,6 @@
 uint8_t* stateRoot = NULL; // this is the state root for the module, global for now, should put it into WASMModuleInstance or the EE instance or something
 uint8_t* blockData = NULL; // this is the blockData for this call, global for now, should put it into WASMModuleInstance or the EE instance or something
 uint32_t blockDataSize = 0; // this is needed with blockData
-
-// crypto globals
-// bls12-381 values
-//mod = 0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab
-//modinv = 0x14fec701e8fb0ce9ed5e64273c4f538b1797ab1458a88de9343ea97914956dc87fe11274d898fafbf4d38259380b48
-//rsquared = 0x11988fe592cae3aa9a793e85b519952d67eb88a9939d83c08de5476c4c95b6d50a76e6a609d104f1f4df1f341c341746
-uint64_t mod[] = {0xb9feffffffffaaab, 0x1eabfffeb153ffff, 0x6730d2a0f6b0f624, 0x64774b84f38512bf, 0x4b1ba7b6434bacd7, 0x1a0111ea397fe69a};
-uint64_t modinv[] = {0xf4d38259380b4820, 0x7fe11274d898fafb, 0x343ea97914956dc8, 0x1797ab1458a88de9, 0xed5e64273c4f538b, 0x14fec701e8fb0ce9};
-uint64_t rsquared[] = {0xf4df1f341c341746, 0xa76e6a609d104f1, 0x8de5476c4c95b6d5, 0x67eb88a9939d83c0, 0x9a793e85b519952d, 0x11988fe592cae3aa};
 
 
 
@@ -80,6 +66,22 @@ void eth2_savePostStateRoot(wasm_exec_env_t exec_env, uint8_t* mem){
   }
 }
 
+// Next are bigint host funcs. Hacky for now.
+
+// bls12-381 values hard-coded
+//mod = 0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab
+//modinv = 0x14fec701e8fb0ce9ed5e64273c4f538b1797ab1458a88de9343ea97914956dc87fe11274d898fafbf4d38259380b48
+//rsquared = 0x11988fe592cae3aa9a793e85b519952d67eb88a9939d83c08de5476c4c95b6d50a76e6a609d104f1f4df1f341c341746
+uint64_t mod[] = {0xb9feffffffffaaab, 0x1eabfffeb153ffff, 0x6730d2a0f6b0f624, 0x64774b84f38512bf, 0x4b1ba7b6434bacd7, 0x1a0111ea397fe69a};
+uint64_t modinv[] = {0xf4d38259380b4820, 0x7fe11274d898fafb, 0x343ea97914956dc8, 0x1797ab1458a88de9, 0xed5e64273c4f538b, 0x14fec701e8fb0ce9};
+uint64_t rsquared[] = {0xf4df1f341c341746, 0xa76e6a609d104f1, 0x8de5476c4c95b6d5, 0x67eb88a9939d83c0, 0x9a793e85b519952d, 0x11988fe592cae3aa};
+
+// bigint functions come from bigint.h
+#define BIGINT_BITS 384
+#define LIMB_BITS 64
+#define LIMB_BITS_OVERFLOW 128
+#include "bigint.h"
+
 void eth2_pushNewDeposit(wasm_exec_env_t exec_env, uint8_t* mem, uint32_t length){
   if(verbose) printf("eth2_pushNewDeposit(%p, %u)\n", mem, length);
 }
@@ -90,55 +92,60 @@ void debug_printMemHex(wasm_exec_env_t exec_env, uint8_t* mem, uint32_t length){
 
 void bignum_f1m_toMontgomery(wasm_exec_env_t exec_env, uint8_t* out, uint8_t* x){
   if(verbose) printf("bignum_f1m_toMontgomery()\n");
-  FUNCNAME(montmul)(out,x,rsquared,mod,modinv);
+  //FUNCNAME(montmul)((UINT*)out,(UINT*)x,(UINT*)rsquared,(UINT*)mod,((UINT*)modinv)[0]);
 }
 
 void bignum_f1m_fromMontgomery(wasm_exec_env_t exec_env, uint8_t* out, uint8_t* x){
   if(verbose) printf("bignum_f1m_fromMontgomery()\n");
-  FUNCNAME(montreduce)(out,x,mod,modinv);
+  //FUNCNAME(montreduce)((UINT*)out,(UINT*)x,(UINT*)mod,((UINT*)modinv)[0]);
 }
 
 int f1m_mul_counter=0;
-void bignum_f1m_mul(wasm_exec_env_t exec_env, uint8_t* out, uint8_t* x, uint8_t* y){
+void bignum_f1m_mul(wasm_exec_env_t exec_env, uint8_t* a1, uint8_t* a2, uint8_t* a3){
   if(verbose) printf("bignum_f1m_mul()\n");
   f1m_mul_counter+=1;
-  FUNCNAME(montmul)(out,x,y,mod,modinv);
+  FUNCNAME(montmul)((UINT*)a3,(UINT*)a2,(UINT*)a1,(UINT*)mod,modinv[0]);
 }
 
 void bignum_f1m_add(wasm_exec_env_t exec_env, uint8_t* out, uint8_t* x, uint8_t* y){
   if(verbose) printf("bignum_f1m_add()\n");
-  FUNCNAME(addmod)(out,x,y,mod);
+  //FUNCNAME(addmod)((UINT*)out,(UINT*)x,(UINT*)y,(UINT*)mod);
 }
 
 void bignum_f1m_sub(wasm_exec_env_t exec_env, uint8_t* out, uint8_t* x, uint8_t* y){
   if(verbose) printf("bignum_f1m_sub()\n");
-  FUNCNAME(subtractmod)(out,x,y,mod);
+  //FUNCNAME(subtractmod)((UINT*)out,(UINT*)x,(UINT*)y,(UINT*)mod);
 }
 
 void bignum_f1m_square(wasm_exec_env_t exec_env, uint8_t* out, uint8_t* x){
   if(verbose) printf("bignum_f1m_square()\n");
-  FUNCNAME(montsquare)(out,x,mod,modinv);
+  //FUNCNAME(montsquare)((UINT*)out,(UINT*)x,(UINT*)mod,modinv[0]);
 }
 
 void bignum_int_mul(wasm_exec_env_t exec_env, uint8_t* out, uint8_t* x, uint8_t* y){
   if(verbose) printf("bignum_int_mul()\n");
-  FUNCNAME(mul)(out,x,y);
+  //FUNCNAME(mul)((UINT*)out,(UINT*)x,(UINT*)y);
 }
 
 uint32_t bignum_int_add(wasm_exec_env_t exec_env, uint8_t* out, uint8_t* x, uint8_t* y){
   if(verbose) printf("bignum_int_add()\n");
-  FUNCNAME(add)(out,x,y);
+  //return FUNCNAME(add)((UINT*)out,(UINT*)x,(UINT*)y);
 }
 
 uint32_t bignum_int_sub(wasm_exec_env_t exec_env, uint8_t* out, uint8_t* x, uint8_t* y){
   if(verbose) printf("bignum_int_sub()\n");
-  FUNCNAME(subtract)(out,x,y);
+  //return FUNCNAME(subtract)((UINT*)out,(UINT*)x,(UINT*)y);
 }
 
 void bignum_int_div(wasm_exec_env_t exec_env, uint8_t* remainder, uint8_t* quotient, uint8_t* x, uint8_t* y){
   if(verbose) printf("bignum_int_div()\n");
-  FUNCNAME(div)(quotient,remainder,x,y);
+  //FUNCNAME(div)((UINT*)quotient,(UINT*)remainder,(UINT*)x,(UINT*)y);
 }
+
+#undef BIGINT_BITS
+#undef LIMB_BITS
+#undef LIMB_BITS_OVERFLOW
+
 
 // wamr registers host functions like this, so that they are available for import
 // see https://github.com/bytecodealliance/wasm-micro-runtime/blob/master/doc/export_native_api.md

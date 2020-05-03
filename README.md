@@ -22,7 +22,7 @@ Two options.
 
 Option 1) CMake for everything.
 
-NOTE: I DIDN'T UPDATE CMakeLists.txt, so this won't work.
+NOTE: THIS OPTION WON'T WORK. WAMR IS AWKWARD TO COMPILE AGAINST. DON'T WANT TO SPEND TIME FIGURING IT OUT NOW. JUST USE OPTION 2.
 ```
 # from scout.c repo directory
 # make sure that dependencies are in this directory, otherwise adjust paths in CMakeLists.txt
@@ -48,7 +48,7 @@ cd ../..
 # compile wamr
 cd wasm-micro-runtime/product-mini/platforms/linux
 mkdir build && cd build
-cmake -DCMAKE_BUILD_TYPE=Release ..
+cmake -DCMAKE_BUILD_TYPE=Release -DWAMR_BUILD_AOT=0 -DWAMR_BUILD_JIT=0 ..
 make	# will output library libvmlib.a
 cd ../../../../..
 
