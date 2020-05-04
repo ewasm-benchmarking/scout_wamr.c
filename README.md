@@ -52,7 +52,7 @@ cmake -DCMAKE_BUILD_TYPE=Release -DWAMR_BUILD_AOT=0 -DWAMR_BUILD_JIT=0 ..
 make	# will output library libvmlib.a
 cd ../../../../..
 
-# compile scout.c, adjust paths to includes and libraries as needed
+# compile scout.c, adjust paths to includes and libraries as needed (NOTE: THE LONG PATH MUST BE MANUALLY SET FOR YOUR LOCAL DIRECTORY PATH. I DON'T KNOW HOW TO MAKE THIS AUTOMATIC. WAITING FOR WAMR TO STABILIZE.)
 gcc scout.c -Ibigint_experiments/ -Iwasm-micro-runtime/core/shared/platform/linux/ -Iwasm-micro-runtime/core/iwasm/include/ -Iwasm-micro-runtime/core/shared/utils/ -Iwasm-micro-runtime/core/shared/utils/uncommon/ -Iwasm-micro-runtime/core/iwasm/common/ -Ilibyaml/include/ -Llibyaml/build/ -Lwasm-micro-runtime/product-mini/platforms/linux/build/ wasm-micro-runtime/product-mini/platforms/linux/build/CMakeFiles/iwasm.dir/home/user/mnt/repos/ethereum/scout.c/wasm-micro-runtime/core/shared/utils/uncommon/bh_read_file.c.o -lyaml -lvmlib -lpthread -lm -O4 -march=native -o scout.exec
 ```
 
@@ -63,4 +63,4 @@ gcc scout.c -Ibigint_experiments/ -Iwasm-micro-runtime/core/shared/platform/linu
 # from scout.c repo directory
 ./scout.exec helloworld.yaml
 # warning: yaml files specify path to wasm files relative to scout.exec, everything is in the same directory for now
-g```
+```
