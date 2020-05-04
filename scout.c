@@ -73,25 +73,10 @@ void eth2_savePostStateRoot(wasm_exec_env_t exec_env, uint8_t* mem){
 // bls12-381 values hard-coded
 //mod = 0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab
 //modinv = 0xceb06106feaafc9468b316fee268cf5819ecca0e8eb2db4c16ef2ef0c8e30b48286adb92d9d113e889f3fffcfffcfffd
-//rsquared = 0x11988fe592cae3aa9a793e85b519952d67eb88a9939d83c08de5476c4c95b6d50a76e6a609d104f1f4df1f341c341746
-//uint64_t mod[] = {0xb9feffffffffaaab, 0x1eabfffeb153ffff, 0x6730d2a0f6b0f624, 0x64774b84f38512bf, 0x4b1ba7b6434bacd7, 0x1a0111ea397fe69a};
-//uint64_t modinv[] = {0x89f3fffcfffcfffd,0x286adb92d9d113e8,0x16ef2ef0c8e30b48,0x19ecca0e8eb2db4c,0x68b316fee268cf58,0xceb06106feaafc94};
-//uint64_t rsquared[] = {0xf4df1f341c341746,0x0a76e6a609d104f1,0x8de5476c4c95b6d5,0x67eb88a9939d83c0,0x9a793e85b519952d,0x11988fe592cae3aa};
-
-//uint32_t mod[] = {0xffffaaab, 0xb9feffff, 0xb153ffff, 0x1eabfffe, 0xf6b0f624, 0x6730d2a0, 0xf38512bf, 0x64774b84, 0x434bacd7, 0x4b1ba7b6, 0x397fe69a, 0x1a0111ea};
-//uint32_t modinv[] = {0xfffcfffd, 0x89f3fffc, 0xd9d113e8, 0x286adb92, 0xc8e30b48, 0x16ef2ef0, 0x8eb2db4c, 0x19ecca0e, 0xe268cf58, 0x68b316fe, 0xfeaafc94, 0xceb06106};
-//uint32_t rsquared[] = {0x1c341746, 0xf4df1f34, 0x9d104f1, 0xa76e6a6, 0x4c95b6d5, 0x8de5476c, 0x939d83c0, 0x67eb88a9, 0xb519952d, 0x9a793e85, 0x92cae3aa, 0x11988fe5};
-
-
-// bls12-381 values hard-coded
-//mod = 0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab
-//modinv = 0x14fec701e8fb0ce9ed5e64273c4f538b1797ab1458a88de9343ea97914956dc87fe11274d898fafbf4d38259380b48
-//rsquared = 0x11988fe592cae3aa9a793e85b519952d67eb88a9939d83c08de5476c4c95b6d50a76e6a609d104f1f4df1f341c341746
 uint64_t mod[] = {0xb9feffffffffaaab, 0x1eabfffeb153ffff, 0x6730d2a0f6b0f624, 0x64774b84f38512bf, 0x4b1ba7b6434bacd7, 0x1a0111ea397fe69a};
 uint64_t modinv[] = {0x89f3fffcfffcfffd};
-uint64_t rsquared[] = {0xf4df1f341c341746, 0xa76e6a609d104f1, 0x8de5476c4c95b6d5, 0x67eb88a9939d83c0, 0x9a793e85b519952d, 0x11988fe592cae3aa};
 
-// bigint functions come from bigint.h
+// bigint functions come from bigint.h, which requires #define's
 #define BIGINT_BITS 384
 #define LIMB_BITS 64
 #define LIMB_BITS_OVERFLOW 128
@@ -106,43 +91,37 @@ void debug_printMemHex(wasm_exec_env_t exec_env, uint8_t* mem, uint32_t length){
 }
 
 int f1m_mul_counter=0;
-void bignum_f1m_mul(wasm_exec_env_t exec_env, uint8_t* a1, uint8_t* a2, uint8_t* a3){
+void bignum_f1m_mul(wasm_exec_env_t exec_env, uint8_t* x, uint8_t* y, uint8_t* out){
   if(verbose) printf("bignum_f1m_mul()\n");
   f1m_mul_counter+=1;
-  FUNCNAME(montmul)((UINT*)a3,(UINT*)a2,(UINT*)a1,(UINT*)mod,modinv[0]);
+  FUNCNAME(montmul)((UINT*)out,(UINT*)y,(UINT*)x,(UINT*)mod,modinv[0]);
 }
 
-//void bignum_f1m_add(wasm_exec_env_t exec_env, uint8_t* out, uint8_t* x, uint8_t* y){
 void bignum_f1m_add(wasm_exec_env_t exec_env, uint8_t* x, uint8_t* y, uint8_t* out){
   if(verbose) printf("bignum_f1m_add()\n");
   FUNCNAME(addmod)((UINT*)out,(UINT*)x,(UINT*)y,(UINT*)mod);
 }
 
-//void bignum_f1m_sub(wasm_exec_env_t exec_env, uint8_t* out, uint8_t* x, uint8_t* y){
 void bignum_f1m_sub(wasm_exec_env_t exec_env, uint8_t* x, uint8_t* y, uint8_t* out){
   if(verbose) printf("bignum_f1m_sub()\n");
   FUNCNAME(subtractmod)((UINT*)out,(UINT*)x,(UINT*)y,(UINT*)mod);
 }
 
-//void bignum_int_mul(wasm_exec_env_t exec_env, uint8_t* out, uint8_t* x, uint8_t* y){
 void bignum_int_mul(wasm_exec_env_t exec_env, uint8_t* x, uint8_t* y, uint8_t* out){
   if(verbose) printf("bignum_int_mul()\n");
   FUNCNAME(mul)((UINT*)out,(UINT*)x,(UINT*)y);
 }
 
-//uint32_t bignum_int_add(wasm_exec_env_t exec_env, uint8_t* out, uint8_t* x, uint8_t* y){
 uint32_t bignum_int_add(wasm_exec_env_t exec_env, uint8_t* x, uint8_t* y, uint8_t* out){
   if(verbose) printf("bignum_int_add()\n");
   return FUNCNAME(add)((UINT*)out,(UINT*)x,(UINT*)y);
 }
 
-//uint32_t bignum_int_sub(wasm_exec_env_t exec_env, uint8_t* out, uint8_t* x, uint8_t* y){
 uint32_t bignum_int_sub(wasm_exec_env_t exec_env, uint8_t* x, uint8_t* y, uint8_t* out){
   if(verbose) printf("bignum_int_sub()\n");
   return FUNCNAME(subtract)((UINT*)out,(UINT*)x,(UINT*)y);
 }
 
-//void bignum_int_div(wasm_exec_env_t exec_env, uint8_t* remainder, uint8_t* quotient, uint8_t* x, uint8_t* y){
 void bignum_int_div(wasm_exec_env_t exec_env, uint8_t* x, uint8_t* y, uint8_t* quotient, uint8_t* remainder){
   if(verbose) printf("bignum_int_div()\n");
   FUNCNAME(div)((UINT*)quotient,(UINT*)remainder,(UINT*)x,(UINT*)y);
