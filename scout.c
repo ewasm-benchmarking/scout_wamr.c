@@ -73,14 +73,18 @@ void eth2_savePostStateRoot(wasm_exec_env_t exec_env, uint8_t* mem){
 // bls12-381 values hard-coded
 //mod = 0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab
 //modinv = 0xceb06106feaafc9468b316fee268cf5819ecca0e8eb2db4c16ef2ef0c8e30b48286adb92d9d113e889f3fffcfffcfffd
-uint64_t mod[] = {0xb9feffffffffaaab, 0x1eabfffeb153ffff, 0x6730d2a0f6b0f624, 0x64774b84f38512bf, 0x4b1ba7b6434bacd7, 0x1a0111ea397fe69a};
-uint64_t modinv[] = {0x89f3fffcfffcfffd};
+//uint64_t mod[] = {0xb9feffffffffaaab, 0x1eabfffeb153ffff, 0x6730d2a0f6b0f624, 0x64774b84f38512bf, 0x4b1ba7b6434bacd7, 0x1a0111ea397fe69a};
+//uint64_t modinv[] = {0x89f3fffcfffcfffd};
 
 // bigint functions come from bigint.h, which requires #define's
+/* included in wamr
+*/
 #define BIGINT_BITS 384
 #define LIMB_BITS 64
 #define LIMB_BITS_OVERFLOW 128
 #include "bigint.h"
+const uint64_t mod[] = {0xb9feffffffffaaab, 0x1eabfffeb153ffff, 0x6730d2a0f6b0f624, 0x64774b84f38512bf, 0x4b1ba7b6434bacd7, 0x1a0111ea397fe69a};
+const uint64_t modinv = 0x89f3fffcfffcfffd;
 
 void eth2_pushNewDeposit(wasm_exec_env_t exec_env, uint8_t* mem, uint32_t length){
   if(verbose) printf("eth2_pushNewDeposit(%p, %u)\n", mem, length);
@@ -94,37 +98,73 @@ int f1m_mul_counter=0;
 void bignum_f1m_mul(wasm_exec_env_t exec_env, uint8_t* x, uint8_t* y, uint8_t* out){
   if(verbose) printf("bignum_f1m_mul()\n");
   f1m_mul_counter+=1;
-  FUNCNAME(montmul)((UINT*)out,(UINT*)y,(UINT*)x,(UINT*)mod,modinv[0]);
+  FUNCNAME(montmul)((UINT*)out,(UINT*)y,(UINT*)x,(UINT*)mod,modinv);
 }
 
+int f1m_add_counter=0;
 void bignum_f1m_add(wasm_exec_env_t exec_env, uint8_t* x, uint8_t* y, uint8_t* out){
   if(verbose) printf("bignum_f1m_add()\n");
+  f1m_add_counter+=1;
   FUNCNAME(addmod)((UINT*)out,(UINT*)x,(UINT*)y,(UINT*)mod);
 }
 
+int f1m_sub_counter=0;
 void bignum_f1m_sub(wasm_exec_env_t exec_env, uint8_t* x, uint8_t* y, uint8_t* out){
   if(verbose) printf("bignum_f1m_sub()\n");
+  f1m_sub_counter+=1;
   FUNCNAME(subtractmod)((UINT*)out,(UINT*)x,(UINT*)y,(UINT*)mod);
 }
 
+int int_mul_counter=0;
 void bignum_int_mul(wasm_exec_env_t exec_env, uint8_t* x, uint8_t* y, uint8_t* out){
   if(verbose) printf("bignum_int_mul()\n");
+  int_mul_counter+=1;
   FUNCNAME(mul)((UINT*)out,(UINT*)x,(UINT*)y);
 }
 
+int int_add_counter=0;
 uint32_t bignum_int_add(wasm_exec_env_t exec_env, uint8_t* x, uint8_t* y, uint8_t* out){
   if(verbose) printf("bignum_int_add()\n");
+  int_add_counter+=1;
   return FUNCNAME(add)((UINT*)out,(UINT*)x,(UINT*)y);
 }
 
+int int_sub_counter=0;
 uint32_t bignum_int_sub(wasm_exec_env_t exec_env, uint8_t* x, uint8_t* y, uint8_t* out){
   if(verbose) printf("bignum_int_sub()\n");
+  int_sub_counter+=1;
   return FUNCNAME(subtract)((UINT*)out,(UINT*)x,(UINT*)y);
 }
 
-void bignum_int_div(wasm_exec_env_t exec_env, uint8_t* x, uint8_t* y, uint8_t* quotient, uint8_t* remainder){
+
+int int_div_counter=0;
+//void bignum_int_div(wasm_exec_env_t exec_env, uint8_t* x, uint8_t* y, uint8_t* remainder, uint8_t* quotient){
+void bignum_int_div(wasm_exec_env_t exec_env, uint8_t* x, uint8_t* y, uint8_t* quotient, uint8_t* remainder) {
+  int_div_counter++;
   if(verbose) printf("bignum_int_div()\n");
+
+  /*
+  for (int i=47;i>=0;i--){
+    printf("%02x",x[i]);
+  }
+  printf("\n");
+  for (int i=47;i>=0;i--){
+    printf("%02x",y[i]);
+  }
+  printf("\n");
+  */
   FUNCNAME(div)((UINT*)quotient,(UINT*)remainder,(UINT*)x,(UINT*)y);
+  /*
+  for (int i=47;i>=0;i--){
+    printf("%02x",quotient[i]);
+  }
+  printf("\n");
+  for (int i=47;i>=0;i--){
+    printf("%02x",remainder[i]);
+  }
+  printf("\n");
+  printf("bignum_int_div() returning\n");
+  */
 }
 
 #undef BIGINT_BITS
@@ -238,6 +278,8 @@ int account_exec(struct Account* account, unsigned char* input_blockData, int in
       goto fail2;
   }
 
+  //printf("loaded module\n");
+
   /* instantiate the module */
   if (!(wasm_module_inst = wasm_runtime_instantiate(wasm_module,
                                                     stack_size,
@@ -248,13 +290,16 @@ int account_exec(struct Account* account, unsigned char* input_blockData, int in
       goto fail3;
   }
 
+  //printf("instantiated module\n");
 
 
   // call func
   struct timespec requestStart, requestEnd;
   clock_gettime(CLOCK_REALTIME, &requestStart);
 
+  //printf("calling func\n");
   wasm_application_execute_func(wasm_module_inst, "main", 0, NULL);
+  //printf("returned from func\n");
 
   clock_gettime(CLOCK_REALTIME, &requestEnd);
   double accum = ( requestEnd.tv_sec - requestStart.tv_sec )
@@ -577,6 +622,12 @@ int main(int argc, char** argv){
 
 
   printf("f1m_mul_counter %u\n",f1m_mul_counter);
+  printf("f1m_add_counter %u\n",f1m_add_counter);
+  printf("f1m_sub_counter %u\n",f1m_sub_counter);
+  printf("int_mul_counter %u\n",int_mul_counter);
+  printf("int_add_counter %u\n",int_add_counter);
+  printf("int_sub_counter %u\n",int_sub_counter);
+  printf("int_div_counter %u\n",int_div_counter);
 
 
 
