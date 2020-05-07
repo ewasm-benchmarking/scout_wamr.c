@@ -48,7 +48,7 @@ cd ../..
 # compile wamr
 cd wasm-micro-runtime/product-mini/platforms/linux
 mkdir build && cd build
-cmake -DCMAKE_BUILD_TYPE=Release -DWAMR_BUILD_AOT=0 -DWAMR_BUILD_JIT=0 ..
+cmake -DCMAKE_BUILD_TYPE=Release -DWAMR_BUILD_AOT=0 -DWAMR_BUILD_JIT=0 -DWAMR_BUILD_LIBC_WASI=0 -DCMAKE_C_COMPILER=clang ..
 make	# will output library libvmlib.a
 cd ../../../../..
 

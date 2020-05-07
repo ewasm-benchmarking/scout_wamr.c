@@ -98,7 +98,7 @@ int f1m_mul_counter=0;
 void bignum_f1m_mul(wasm_exec_env_t exec_env, uint8_t* x, uint8_t* y, uint8_t* out){
   if(verbose) printf("bignum_f1m_mul()\n");
   f1m_mul_counter+=1;
-  FUNCNAME(montmul)((UINT*)out,(UINT*)y,(UINT*)x,(UINT*)mod,modinv);
+  FUNCNAME(mulmodmont)((UINT*)out,(UINT*)y,(UINT*)x,(UINT*)mod,modinv);
 }
 
 int f1m_add_counter=0;
@@ -112,7 +112,7 @@ int f1m_sub_counter=0;
 void bignum_f1m_sub(wasm_exec_env_t exec_env, uint8_t* x, uint8_t* y, uint8_t* out){
   if(verbose) printf("bignum_f1m_sub()\n");
   f1m_sub_counter+=1;
-  FUNCNAME(subtractmod)((UINT*)out,(UINT*)x,(UINT*)y,(UINT*)mod);
+  FUNCNAME(submod)((UINT*)out,(UINT*)x,(UINT*)y,(UINT*)mod);
 }
 
 int int_mul_counter=0;
@@ -133,7 +133,7 @@ int int_sub_counter=0;
 uint32_t bignum_int_sub(wasm_exec_env_t exec_env, uint8_t* x, uint8_t* y, uint8_t* out){
   if(verbose) printf("bignum_int_sub()\n");
   int_sub_counter+=1;
-  return FUNCNAME(subtract)((UINT*)out,(UINT*)x,(UINT*)y);
+  return FUNCNAME(sub)((UINT*)out,(UINT*)x,(UINT*)y);
 }
 
 
