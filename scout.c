@@ -232,6 +232,10 @@ int account_exec(struct Account* account, unsigned char* input_blockData, int in
   stateRoot = account->stateRoot;
 
 
+  struct timespec requestStart1, requestEnd1;
+  clock_gettime(CLOCK_REALTIME, &requestStart1);
+
+
   // wamr stuff
   //char *wasm_file = NULL;
   const char *func_name = NULL;
@@ -290,22 +294,28 @@ int account_exec(struct Account* account, unsigned char* input_blockData, int in
       goto fail3;
   }
 
+  clock_gettime(CLOCK_REALTIME, &requestEnd1);
+  double accum1 = ( requestEnd1.tv_sec - requestStart1.tv_sec )
+                 + ( requestEnd1.tv_nsec - requestStart1.tv_nsec )
+                 / 1E9;
+  printf( "startup time: %lf\n", accum1 );
+
   //printf("instantiated module\n");
 
 
   // call func
-  struct timespec requestStart, requestEnd;
-  clock_gettime(CLOCK_REALTIME, &requestStart);
+  struct timespec requestStart2, requestEnd2;
+  clock_gettime(CLOCK_REALTIME, &requestStart2);
 
   //printf("calling func\n");
   wasm_application_execute_func(wasm_module_inst, "main", 0, NULL);
   //printf("returned from func\n");
 
-  clock_gettime(CLOCK_REALTIME, &requestEnd);
-  double accum = ( requestEnd.tv_sec - requestStart.tv_sec )
-                 + ( requestEnd.tv_nsec - requestStart.tv_nsec )
+  clock_gettime(CLOCK_REALTIME, &requestEnd2);
+  double accum2 = ( requestEnd2.tv_sec - requestStart2.tv_sec )
+                 + ( requestEnd2.tv_nsec - requestStart2.tv_nsec )
                  / 1E9;
-  printf( "execution time: %lf\n", accum );
+  printf( "execution time: %lf\n", accum2 );
 
 
 
