@@ -16,4 +16,4 @@ add_dependencies(scout.exec vmlib yaml)
 target_link_libraries(scout.exec vmlib yaml -lm -ldl -lpthread)
 
 
-include_directories(${WAMR_DIR}/core/shared/platform/linux ${WAMR_DIR}/core/shared/platform/include ${WAMR_DIR}/core/shared/include ${WAMR_DIR}/core/iwasm/include ${LIBYAML_DIR}/include)
+include_directories(${WAMR_DIR}/core/shared/platform/linux ${WAMR_DIR}/core/shared/platform/include ${WAMR_DIR}/core/shared/include ${WAMR_DIR}/core/iwasm/include ${WAMR_DIR}/core/iwasm/common ${WAMR_DIR}/core/shared/utils ./bigint_experiments ${LIBYAML_DIR}/include)
