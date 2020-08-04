@@ -7,11 +7,11 @@
 
 #include "yaml.h"
 
-#include "bh_platform.h"
-#include "bh_assert.h"
-#include "bh_log.h"
+// #include "bh_platform.h"
+// #include "bh_assert.h"
+// #include "bh_log.h"
 //#include "bh_memory.h"
-#include "bh_read_file.h"
+// #include "bh_read_file.h"
 #include "wasm_export.h"
 #include "wasm_runtime_common.h"
 
@@ -268,15 +268,32 @@ int account_exec(struct Account* account, unsigned char* input_blockData, int in
     goto fail1;
   }
 
-  bh_log_set_verbose_level(0);
+  // bh_log_set_verbose_level(0);
 
   // read bytecode
+  /*
   if (!(wasm_file_buf = (uint8*) bh_read_file_to_buffer(account->wasm_filename,
                                                         &wasm_file_size)))
       goto fail1;
+  */
+
+  FILE *f = fopen(account->wasm_filename, "rb");
+  if(!f) {
+    printf("wasm file could not be opened");
+    goto fail1;
+  }
+
+  fseek(f, 0, SEEK_END);
+  long fsize = ftell(f);
+  fseek(f, 0, SEEK_SET);
+
+  wasm_file_buf = (uint8*) malloc(fsize + 1);
+  fread(wasm_file_buf, 1, fsize, f);
+  fclose(f);
+  wasm_file_buf[fsize] = 0;
 
   // load WASM module
-  if (!(wasm_module = wasm_runtime_load(wasm_file_buf, wasm_file_size,
+  if (!(wasm_module = wasm_runtime_load(wasm_file_buf, fsize,
                                         error_buf, sizeof(error_buf)))) {
       printf("%s\n", error_buf);
       goto fail2;
