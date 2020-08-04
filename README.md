@@ -4,16 +4,7 @@ The C file `scout.c` implements the [Scout spec](https://ethresear.ch/t/phase-2-
 
 # Dependencies
 
-We use `libyaml` to parse Scout test yaml format and `wamr` to execute Wasm. If the dependencies are not already present, then download them with `git clone`. If you don't download these dependencies into the main directory of this project, then you will have to adjust paths to them below. CMake is required to compile `libyaml` and `wamr`, and optional to compile `scout.c`.
-
-```
-cd scout.c
-git clone https://github.com/yaml/libyaml.git
-cd libyaml && git checkout 72e2f75277ff88ad1fb8a81cf422df06bf371578 . && cd ..
-git clone https://github.com/bytecodealliance/wasm-micro-runtime.git
-cd wasm-micro-runtime && git checkout d381b0fdec04f5ca8b891c070a00fd99a785c322 . && cd ..
-git clone https://github.com/poemm/bigint_experiments.git
-```
+We use `libyaml` to parse Scout test yaml format and `wamr` to execute Wasm. If the dependencies are not already present, then download them with `git clone`. If you don't download these dependencies into the main directory of this project, then you will have to adjust paths to them below. CMake is required to compile `libyaml` and `wamr`, and optional to compile `scout.c`. Make sure to download submodules before compiling the project: `git submodule update --init`.
 
 
 # Compile
